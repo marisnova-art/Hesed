@@ -24,14 +24,19 @@
             --accent-color: #d97757;
             --accent-hover: #c56546;
             --danger-color: #ef4444;
+            --success-color: #10b981;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; }
         body { background-color: var(--bg-dark); color: var(--text-bright); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
 
-        .admin-card { background: var(--card-dark); border: 1px solid var(--border-dark); border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 440px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        .admin-card { background: var(--card-dark); border: 1px solid var(--border-dark); border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 460px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
         .admin-title { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem; }
-        .admin-subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 2rem; }
+        .admin-subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 1.5rem; }
+
+        .auth-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-dark); padding-bottom: 0.5rem; }
+        .tab-btn { background: none; border: none; color: var(--text-dim); font-size: 0.85rem; font-weight: 500; cursor: pointer; padding: 0.5rem 0.8rem; border-radius: 6px; transition: all 0.2s; }
+        .tab-btn.active { color: #ffffff; background: rgba(217, 119, 87, 0.18); border: 1px solid rgba(217, 119, 87, 0.4); }
 
         .form-group { margin-bottom: 1.25rem; }
         .form-label { display: block; font-size: 0.8rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 0.5rem; }
@@ -41,77 +46,185 @@
         .btn-submit { width: 100%; padding: 0.85rem; background: var(--accent-color); color: #ffffff; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 0.5rem; }
         .btn-submit:hover { background: var(--accent-hover); }
 
-        .alert-banner { display: none; padding: 1rem; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger-color); border-radius: 10px; color: #fca5a5; font-size: 0.85rem; margin-bottom: 1.5rem; word-break: break-all; }
+        .alert-banner { display: none; padding: 1rem; background: rgba(239, 68, 68, 0.12); border: 1px solid var(--danger-color); border-radius: 10px; color: #fca5a5; font-size: 0.85rem; margin-bottom: 1.5rem; word-break: break-all; line-height: 1.5; }
         .alert-banner.active { display: block; }
+        .alert-success { display: none; padding: 1rem; background: rgba(16, 185, 129, 0.12); border: 1px solid var(--success-color); border-radius: 10px; color: #a7f3d0; font-size: 0.85rem; margin-bottom: 1.5rem; word-break: break-all; line-height: 1.5; }
+        .alert-success.active { display: block; }
+
+        .dashboard-view { display: none; }
+        .dashboard-view.active { display: block; }
+        .auth-view.hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="admin-card" id="authCard">
+    <!-- Authentication View -->
+    <div class="admin-card auth-view" id="authCard">
         <h1 class="admin-title"><i class="fa-solid fa-shield-halved" style="color: var(--accent-color);"></i> Studio Admin</h1>
-        <p class="admin-subtitle">이 페이지는 HESED 스튜디오 관리자 전용 인증 페이지입니다.</p>
+        <p class="admin-subtitle">HESED 스튜디오 인증 관리 시스템</p>
 
         <div class="alert-banner" id="errorBanner"></div>
+        <div class="alert-success" id="successBanner"></div>
 
-        <form id="magicLinkForm">
+        <div class="auth-tabs">
+            <button type="button" class="tab-btn active" id="tabPassword" onclick="switchTab('password')">비밀번호 로그인</button>
+            <button type="button" class="tab-btn" id="tabMagicLink" onclick="switchTab('magiclink')">Magic Link</button>
+        </div>
+
+        <!-- Password Form -->
+        <form id="passwordForm">
             <div class="form-group">
-                <label class="form-label" for="emailInput">Authorized Email</label>
-                <input type="email" id="emailInput" class="form-input" placeholder="andrew@hesed.studio" required autocomplete="email">
+                <label class="form-label" for="emailInputPass">Email</label>
+                <input type="email" id="emailInputPass" class="form-input" placeholder="andrew@hesed.studio" required autocomplete="email">
             </div>
-            <button type="submit" class="btn-submit" id="submitBtn">Magic Link 발송</button>
+            <div class="form-group">
+                <label class="form-label" for="passInput">Password</label>
+                <input type="password" id="passInput" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn-submit" id="btnPassSubmit">로그인</button>
         </form>
+
+        <!-- Magic Link Form (Hidden by Default) -->
+        <form id="magicLinkForm" style="display: none;">
+            <div class="form-group">
+                <label class="form-label" for="emailInputMagic">Email</label>
+                <input type="email" id="emailInputMagic" class="form-input" placeholder="andrew@hesed.studio" required autocomplete="email">
+            </div>
+            <button type="submit" class="btn-submit" id="btnMagicSubmit">Magic Link 발송</button>
+        </form>
+
         <div id="statusMsg" style="margin-top: 1.2rem; font-size: 0.85rem; text-align: center; color: var(--text-dim);"></div>
     </div>
 
+    <!-- Dashboard View (After Login) -->
+    <div class="admin-card dashboard-view" id="dashboardCard">
+        <h1 class="admin-title"><i class="fa-solid fa-user-check" style="color: var(--success-color);"></i> 관리자 세션 중</h1>
+        <p class="admin-subtitle" id="userEmailDisplay">성공적으로 로그인되었습니다.</p>
+        <div style="padding: 1.5rem 0; text-align: center; color: var(--text-dim); font-size: 0.9rem;">
+            HESED 스튜디오 데이터베이스 제어 권한이 활성화되었습니다.
+        </div>
+        <button type="button" class="btn-submit" onclick="handleLogout()" style="background: #374151;">로그아웃</button>
+    </div>
+
     <script>
-        // IMPORTANT: Replace these variables with your actual credentials from your Supabase Dashboard
-        const SUPABASE_URL = 'https://your-supabase-project.supabase.co';
-        const SUPABASE_ANON_KEY = 'your-anon-key';
+        // Pre-configured Supabase Credentials
+        const SUPABASE_URL = 'https://grgqrsaubwwgxcdmrbea.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyZ3Fyc2F1Ynd3Z3hjZG1yYmVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxODI4MTEsImV4cCI6MjEwNzc1ODgxMX0.ROo41s44sR3W901xROaSRz7H5Fmq45uTEIhYeVifT2s';
 
         let supabase = null;
         const errorBanner = document.getElementById('errorBanner');
+        const successBanner = document.getElementById('successBanner');
 
         function showError(msg) {
             errorBanner.innerText = msg;
             errorBanner.classList.add('active');
+            successBanner.classList.remove('active');
         }
 
-        function clearError() {
-            errorBanner.innerText = '';
+        function showSuccess(msg) {
+            successBanner.innerText = msg;
+            successBanner.classList.add('active');
             errorBanner.classList.remove('active');
         }
 
-        // Initialize Supabase client safely
+        function clearAlerts() {
+            errorBanner.innerText = '';
+            errorBanner.classList.remove('active');
+            successBanner.innerText = '';
+            successBanner.classList.remove('active');
+        }
+
+        function switchTab(mode) {
+            clearAlerts();
+            document.getElementById('statusMsg').innerText = '';
+            if (mode === 'password') {
+                document.getElementById('passwordForm').style.display = 'block';
+                document.getElementById('magicLinkForm').style.display = 'none';
+                document.getElementById('tabPassword').classList.add('active');
+                document.getElementById('tabMagicLink').classList.remove('active');
+            } else {
+                document.getElementById('passwordForm').style.display = 'none';
+                document.getElementById('magicLinkForm').style.display = 'block';
+                document.getElementById('tabPassword').classList.remove('active');
+                document.getElementById('tabMagicLink').classList.add('active');
+            }
+        }
+
         function initSupabase() {
             try {
                 if (window.supabase && typeof window.supabase.createClient === 'function') {
-                    if (SUPABASE_URL !== 'https://grgqrsaubwwgxcdmrbea.supabase.co' && SUPABASE_ANON_KEY !== 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyZ3Fyc2F1Ynd3Z3hjZG1yYmVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxODI4MTEsImV4cCI6MjEwNzc1ODgxMX0.ROo41s44sR3W901xROaSRz7H5Fmq45uTEIhYeVifT2s') {
-                        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                        clearError();
-                    } else {
-                        showError("⚠️ Supabase 설정 필요: admin.html 파일 상단의 SUPABASE_URL 과 SUPABASE_ANON_KEY 값을 실 프로젝트 값으로 교체해 주세요.");
-                    }
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    checkSession();
                 } else {
-                    showError("⚠️ Supabase SDK 로드 실패: 스크립트 연결 상태 및 외부 네트워크를 점검해 주세요.");
+                    showError("⚠️ Supabase SDK 로드 실패: 외부 인터넷 연결 상태를 점검해 주세요.");
                 }
             } catch (err) {
-                showError("초기화 오류 발생: " + err.message);
+                showError("초기화 오류: " + err.message);
+            }
+        }
+
+        async function checkSession() {
+            if (!supabase) return;
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                renderLoggedInState(session.user);
+            }
+        }
+
+        function renderLoggedInState(user) {
+            document.getElementById('authCard').classList.add('hidden');
+            document.getElementById('dashboardCard').classList.add('active');
+            document.getElementById('userEmailDisplay').innerText = `접속 계정: ${user.email}`;
+        }
+
+        async function handleLogout() {
+            if (supabase) {
+                await supabase.auth.signOut();
+                location.reload();
             }
         }
 
         document.addEventListener('DOMContentLoaded', initSupabase);
 
-        document.getElementById('magicLinkForm').addEventListener('submit', async (e) => {
+        // Password Login Handler
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('emailInput').value.trim();
+            const email = document.getElementById('emailInputPass').value.trim();
+            const password = document.getElementById('passInput').value;
             const statusMsg = document.getElementById('statusMsg');
 
-            if (!supabase) {
-                showError("Supabase 연동이 완료되지 않았습니다. URL 및 Key 설정을 먼저 확인해 주세요.");
-                return;
-            }
+            if (!supabase) return showError("Supabase 초기화 실패. 페이지를 새로고침 해보세요.");
 
-            statusMsg.innerText = "인증 링크를 전송하는 중...";
+            statusMsg.innerText = "로그인 인증 처리 중...";
+            clearAlerts();
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+                if (error) {
+                    statusMsg.innerText = "";
+                    showError("로그인 실패: " + error.message + " (계정 생성 여부 및 비밀번호를 확인해 주세요)");
+                } else {
+                    statusMsg.innerText = "인증 성공!";
+                    showSuccess("로그인에 성공했습니다.");
+                    renderLoggedInState(data.user);
+                }
+            } catch (err) {
+                statusMsg.innerText = "";
+                showError("오류 발생: " + err.message);
+            }
+        });
+
+        // Magic Link Handler
+        document.getElementById('magicLinkForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('emailInputMagic').value.trim();
+            const statusMsg = document.getElementById('statusMsg');
+
+            if (!supabase) return showError("Supabase 초기화 실패. 페이지를 새로고침 해보세요.");
+
+            statusMsg.innerText = "Magic Link 전송 요청 중...";
+            clearAlerts();
 
             try {
                 const { error } = await supabase.auth.signInWithOtp({ 
@@ -121,14 +234,14 @@
 
                 if (error) {
                     statusMsg.innerText = "";
-                    showError("요청 실패: " + error.message);
+                    showError("전송 실패: " + error.message);
                 } else {
-                    clearError();
-                    statusMsg.innerText = `${email} (으)로 Magic Link가 전송되었습니다! 이메일함을 확인해 주세요.`;
+                    statusMsg.innerText = "";
+                    showSuccess(`${email} 주소로 인증 링크가 발송되었습니다! 이메일을 확인해 주세요.`);
                 }
             } catch (err) {
                 statusMsg.innerText = "";
-                showError("처리 도중 예외가 발생했습니다: " + err.message);
+                showError("오류 발생: " + err.message);
             }
         });
     </script>
