@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HESED Studio — Admin Control Panel</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0f1115;
+            --card-dark: #181b21;
+            --border-dark: #2a2e37;
+            --text-bright: #f3f4f6;
+            --text-dim: #9ca3af;
+            --accent-color: #d97757;
+            --accent-hover: #c56546;
+            --danger-color: #ef4444;
+            --success-color: #10b981;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-bright); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+
+        .admin-card { background: var(--card-dark); border: 1px solid var(--border-dark); border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 460px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        .admin-title { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem; }
+        .admin-subtitle { color: var(--text-dim); font-size: 0.875rem; margin-bottom: 1.5rem; }
+
+        .auth-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-dark); padding-bottom: 0.5rem; }
+        .tab-btn { background: none; border: none; color: var(--text-dim); font-size: 0.85rem; font-weight: 500; cursor: pointer; padding: 0.5rem 0.8rem; border-radius: 6px; transition: all 0.2s; }
+        .tab-btn.active { color: #ffffff; background: rgba(217, 119, 87, 0.18); border: 1px solid rgba(217, 119, 87, 0.4); }
+
+        .form-group { margin-bottom: 1.25rem; }
+        .form-label { display: block; font-size: 0.8rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 0.5rem; }
+        .form-input { width: 100%; padding: 0.85rem 1rem; background: #0b0c0e; border: 1px solid var(--border-dark); border-radius: 8px; color: #ffffff; font-size: 0.95rem; outline: none; transition: border-color 0.2s; }
+        .form-input:focus { border-color: var(--accent-color); }
+
+        .btn-submit { width: 100%; padding: 0.85rem; background: var(--accent-color); color: #ffffff; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 0.5rem; }
+        .btn-submit:hover { background: var(--accent-hover); }
+
+        .alert-banner { display: none; padding: 1rem; background: rgba(239, 68, 68, 0.12); border: 1px solid var(--danger-color); border-radius: 10px; color: #fca5a5; font-size: 0.85rem; margin-bottom: 1.5rem; word-break: break-all; line-height: 1.5; }
+        .alert-banner.active { display: block; }
+        .alert-success { display: none; padding: 1rem; background: rgba(16, 185, 129, 0.12); border: 1px solid var(--success-color); border-radius: 10px; color: #a7f3d0; font-size: 0.85rem; margin-bottom: 1.5rem; word-break: break-all; line-height: 1.5; }
+        .alert-success.active { display: block; }
+
+        .dashboard-view { display: none; }
+        .dashboard-view.active { display: block; }
+        .auth-view.hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Authentication View -->
+    <div class="admin-card auth-view" id="authCard">
+        <h1 class="admin-title"><i class="fa-solid fa-shield-halved" style="color: var(--accent-color);"></i> Studio Admin</h1>
+        <p class="admin-subtitle">HESED 스튜디오 인증 관리 시스템</p>
+
+        <div class="alert-banner" id="errorBanner"></div>
+        <div class="alert-success" id="successBanner"></div>
+
+        <div class="auth-tabs">
+            <button type="button" class="tab-btn active" id="tabPassword" onclick="switchTab('password')">비밀번호 로그인</button>
+            <button type="button" class="tab-btn" id="tabMagicLink" onclick="switchTab('magiclink')">Magic Link</button>
+        </div>
+
+        <!-- Password Form -->
+        <form id="passwordForm">
+            <div class="form-group">
+                <label class="form-label" for="emailInputPass">Email</label>
+                <input type="email" id="emailInputPass" class="form-input" placeholder="andrew@hesed.studio" required autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="passInput">Password</label>
+                <input type="password" id="passInput" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn-submit" id="btnPassSubmit">로그인</button>
+        </form>
+
+        <!-- Magic Link Form (Hidden by Default) -->
+        <form id="magicLinkForm" style="display: none;">
+            <div class="form-group">
+                <label class="form-label" for="emailInputMagic">Email</label>
+                <input type="email" id="emailInputMagic" class="form-input" placeholder="andrew@hesed.studio" required autocomplete="email">
+            </div>
+            <button type="submit" class="btn-submit" id="btnMagicSubmit">Magic Link 발송</button>
+        </form>
+
+        <div id="statusMsg" style="margin-top: 1.2rem; font-size: 0.85rem; text-align: center; color: var(--text-dim);"></div>
+    </div>
+
+    <!-- Dashboard View (After Login) -->
+    <div class="admin-card dashboard-view" id="dashboardCard">
+        <h1 class="admin-title"><i class="fa-solid fa-user-check" style="color: var(--success-color);"></i> 관리자 세션 중</h1>
+        <p class="admin-subtitle" id="userEmailDisplay">성공적으로 로그인되었습니다.</p>
+        <div style="padding: 1.5rem 0; text-align: center; color: var(--text-dim); font-size: 0.9rem;">
+            HESED 스튜디오 데이터베이스 제어 권한이 활성화되었습니다.
+        </div>
+        <button type="button" class="btn-submit" onclick="handleLogout()" style="background: #374151;">로그아웃</button>
+    </div>
+
+    <script>
+        // Pre-configured Supabase Credentials
+        const SUPABASE_URL = 'https://grgqrsaubwwgxcdmrbea.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyZ3Fyc2F1Ynd3Z3hjZG1yYmVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxODI4MTEsImV4cCI6MjEwNzc1ODgxMX0.ROo41s44sR3W901xROaSRz7H5Fmq45uTEIhYeVifT2s';
+
+        let supabase = null;
+        const errorBanner = document.getElementById('errorBanner');
+        const successBanner = document.getElementById('successBanner');
+
+        function showError(msg) {
+            errorBanner.innerText = msg;
+            errorBanner.classList.add('active');
+            successBanner.classList.remove('active');
+        }
+
+        function showSuccess(msg) {
+            successBanner.innerText = msg;
+            successBanner.classList.add('active');
+            errorBanner.classList.remove('active');
+        }
+
+        function clearAlerts() {
+            errorBanner.innerText = '';
+            errorBanner.classList.remove('active');
+            successBanner.innerText = '';
+            successBanner.classList.remove('active');
+        }
+
+        function switchTab(mode) {
+            clearAlerts();
+            document.getElementById('statusMsg').innerText = '';
+            if (mode === 'password') {
+                document.getElementById('passwordForm').style.display = 'block';
+                document.getElementById('magicLinkForm').style.display = 'none';
+                document.getElementById('tabPassword').classList.add('active');
+                document.getElementById('tabMagicLink').classList.remove('active');
+            } else {
+                document.getElementById('passwordForm').style.display = 'none';
+                document.getElementById('magicLinkForm').style.display = 'block';
+                document.getElementById('tabPassword').classList.remove('active');
+                document.getElementById('tabMagicLink').classList.add('active');
+            }
+        }
+
+        function initSupabase() {
+            try {
+                if (window.supabase && typeof window.supabase.createClient === 'function') {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    checkSession();
+                } else {
+                    showError("⚠️ Supabase SDK 로드 실패: 외부 인터넷 연결 상태를 점검해 주세요.");
+                }
+            } catch (err) {
+                showError("초기화 오류: " + err.message);
+            }
+        }
+
+        async function checkSession() {
+            if (!supabase) return;
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                renderLoggedInState(session.user);
+            }
+        }
+
+        function renderLoggedInState(user) {
+            document.getElementById('authCard').classList.add('hidden');
+            document.getElementById('dashboardCard').classList.add('active');
+            document.getElementById('userEmailDisplay').innerText = `접속 계정: ${user.email}`;
+        }
+
+        async function handleLogout() {
+            if (supabase) {
+                await supabase.auth.signOut();
+                location.reload();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initSupabase);
+
+        // Password Login Handler
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('emailInputPass').value.trim();
+            const password = document.getElementById('passInput').value;
+            const statusMsg = document.getElementById('statusMsg');
+
+            if (!supabase) return showError("Supabase 초기화 실패. 페이지를 새로고침 해보세요.");
+
+            statusMsg.innerText = "로그인 인증 처리 중...";
+            clearAlerts();
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+                if (error) {
+                    statusMsg.innerText = "";
+                    showError("로그인 실패: " + error.message + " (계정 생성 여부 및 비밀번호를 확인해 주세요)");
+                } else {
+                    statusMsg.innerText = "인증 성공!";
+                    showSuccess("로그인에 성공했습니다.");
+                    renderLoggedInState(data.user);
+                }
+            } catch (err) {
+                statusMsg.innerText = "";
+                showError("오류 발생: " + err.message);
+            }
+        });
+
+        // Magic Link Handler
+        document.getElementById('magicLinkForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('emailInputMagic').value.trim();
+            const statusMsg = document.getElementById('statusMsg');
+
+            if (!supabase) return showError("Supabase 초기화 실패. 페이지를 새로고침 해보세요.");
+
+            statusMsg.innerText = "Magic Link 전송 요청 중...";
+            clearAlerts();
+
+            try {
+                const { error } = await supabase.auth.signInWithOtp({ 
+                    email,
+                    options: { emailRedirectTo: window.location.href }
+                });
+
+                if (error) {
+                    statusMsg.innerText = "";
+                    showError("전송 실패: " + error.message);
+                } else {
+                    statusMsg.innerText = "";
+                    showSuccess(`${email} 주소로 인증 링크가 발송되었습니다! 이메일을 확인해 주세요.`);
+                }
+            } catch (err) {
+                statusMsg.innerText = "";
+                showError("오류 발생: " + err.message);
+            }
+        });
+    </script>
+</body>
+</html>
