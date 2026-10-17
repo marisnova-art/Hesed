@@ -85,7 +85,7 @@
         function initSupabase() {
             try {
                 if (window.supabase && typeof window.supabase.createClient === 'function') {
-                    if (SUPABASE_URL !== 'https://your-supabase-project.supabase.co' && SUPABASE_ANON_KEY !== 'your-anon-key') {
+                    if (SUPABASE_URL !== 'https://grgqrsaubwwgxcdmrbea.supabase.co' && SUPABASE_ANON_KEY !== 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyZ3Fyc2F1Ynd3Z3hjZG1yYmVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxODI4MTEsImV4cCI6MjEwNzc1ODgxMX0.ROo41s44sR3W901xROaSRz7H5Fmq45uTEIhYeVifT2s') {
                         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                         clearError();
                     } else {
